@@ -9,6 +9,7 @@ from discord.ext.commands import Cog, \
 from bot.helpers.error_helper import send_error
 from typing import Any, Coroutine, Optional
 from discord import Interaction
+from lib.config_required import MissingRequiredConfigError
 
 
 class CommandErrorHandler(Cog):
@@ -29,6 +30,8 @@ class CommandErrorHandler(Cog):
 
         if isinstance(error, CommandNotFound):
             await send_command_help(ctx)
+        elif isinstance(error, MissingRequiredConfigError):
+            await send_error(ctx, error)
         elif isinstance(error, MissingPermissions):
             await send_error(ctx, "You don't have the authorization to use that command.")
         elif isinstance(error, CommandOnCooldown):
@@ -50,7 +53,7 @@ class CommandErrorHandler(Cog):
         :param _ : The error that was raised during command execution.
         :type _: Exception
         """
-        if interaction:
+        if interaction and interaction.is_expired():
             await interaction.response.send_message("Interaction failed, please try again later!", ephemeral=True)
 
 

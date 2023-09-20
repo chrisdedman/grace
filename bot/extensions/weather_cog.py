@@ -1,4 +1,3 @@
-from geopy.geocoders import Nominatim
 from timezonefinder import TimezoneFinder
 from pytz import timezone
 from datetime import datetime
@@ -9,7 +8,7 @@ from string import capwords
 from lib.config_required import cog_config_required
 
 
-@cog_config_required("openweather", "api_key")
+@cog_config_required("openweather", "api_key", "Generate yours [here](https://openweathermap.org/api)")
 class WeatherCog(Cog, name="Weather", description="get current weather information from a city"):
     """A cog that retrieves current weather information for a given city."""
     OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5/"
@@ -19,23 +18,22 @@ class WeatherCog(Cog, name="Weather", description="get current weather informati
         self.api_key = self.required_config
 
     @staticmethod
-    def get_timezone(city: str) -> datetime:
+    def get_timezone(data: any) -> datetime:
         """Get the timezone for the given city.
 
-        :param city: The city to get the timezone for.
-        :type city: str
-        :return: The timezone for the given city.
+        :param data: The weather data to get the timezone for.
+        :type data: Any | None
+        :return: The timezone based on Longitude and Latitude.
         :rtype: datetime.tzinfo
         """
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        # getting Latitude and Longitude
-        location = geolocator.geocode(city)
+        longitude       = float(data["coord"]['lon'])
+        latitude        = float(data["coord"]['lat'])
         timezone_finder = TimezoneFinder()
-
+        
         result = timezone_finder.timezone_at(
-            lng=location.longitude,
-            lat=location.latitude)
-        return datetime.now(timezone(result))
+            lng=longitude,
+            lat=latitude)
+        return datetime.now(timezone(str(result)))
 
     @staticmethod
     def kelvin_to_celsius(kelvin: float) -> float:
@@ -85,28 +83,31 @@ class WeatherCog(Cog, name="Weather", description="get current weather informati
         :type city_input: str
         :return: This function sends an embed message to the Discord channel
         """
-        city = capwords(city_input)
-        timezone_city = self.get_timezone(city)
-        data_weather = await self.get_weather(city)
+        if ctx.interaction:
+            await ctx.interaction.response.defer()
+
+        city          = capwords(city_input)
+        data_weather  = await self.get_weather(city)
+        timezone_city = self.get_timezone(data_weather)
 
         # Now data_weather contains lists of data
         # from the city inputer by the user
         if data_weather:
-            icon_id = data_weather["weather"][0]["icon"]
-            main = data_weather["main"]
+            icon_id    = data_weather["weather"][0]["icon"]
+            main       = data_weather["main"]
             visibility = data_weather['visibility']
             current_temperature = main["temp"]
 
             fahrenheit = self.kelvin_to_fahrenheit(int(current_temperature))
-            celsius = self.kelvin_to_celsius(int(current_temperature))
+            celsius    = self.kelvin_to_celsius(int(current_temperature))
 
-            feels_like = main["feels_like"]
+            feels_like            = main["feels_like"]
             feels_like_fahrenheit = self.kelvin_to_fahrenheit(int(feels_like))
-            feels_like_celsius = self.kelvin_to_celsius(int(feels_like))
+            feels_like_celsius    = self.kelvin_to_celsius(int(feels_like))
 
-            current_pressure = main["pressure"]
-            current_humidity = main["humidity"]
-            forcast = data_weather["weather"]
+            current_pressure    = main["pressure"]
+            current_humidity    = main["humidity"]
+            forcast             = data_weather["weather"]
             weather_description = forcast[0]["description"]
 
             embed = Embed(

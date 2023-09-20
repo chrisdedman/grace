@@ -3,6 +3,7 @@ from discord import Intents, LoginFailure, ActivityType, Activity
 from discord.ext.commands import Bot, when_mentioned_or
 from pretty_help import PrettyHelp
 from bot import app
+from bot.helpers.bot_helper import default_color
 from bot.models.channel import Channel
 from bot.models.extension import Extension
 
@@ -10,7 +11,7 @@ from bot.models.extension import Extension
 class Grace(Bot):
     def __init__(self):
         self.config = app.bot
-        self.default_color = int(self.config.get("default_color"), 16)
+        self.default_color = default_color()
 
         super().__init__(
             command_prefix=when_mentioned_or(self.config.get("prefix")),
@@ -21,7 +22,16 @@ class Grace(Bot):
         )
 
     def get_channel_by_name(self, name):
-        return self.get_channel(Channel.get_by(channel_name=name).channel_id)
+        """Gets the channel from the database and returns the discord channel with the associated id.
+
+        :param name: The name of the channel.
+        :return: The discord channel.
+        """
+        channel = Channel.get_by(channel_name=name)
+
+        if channel:
+            return self.get_channel(channel.channel_id)
+        return None
 
     async def load_extensions(self):
         for module in app.extension_modules:

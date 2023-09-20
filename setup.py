@@ -1,13 +1,4 @@
-from setuptools import *
-
-
-def after_install():
-    try:
-        import nltk
-        nltk.download('vader_lexicon')
-    except ModuleNotFoundError:
-        print("nltk module not properly installed")
-
+from setuptools import setup, find_packages
 
 setup(
     name='Grace',
@@ -34,7 +25,7 @@ setup(
         'pytest',
         'emoji>=2.1.0',
         'nltk',
-        'discord-pretty-help==1.3.4',
+        'discord-pretty-help==2.0.4',
         'requests',
         'pillow',
         'geopy',
@@ -45,8 +36,8 @@ setup(
         'configparser',
         'pygithub',
         'googletrans==4.0.0-rc1',
+        'openai==0.26.1',
+        'coverage',
     ],
     scripts=['bin/grace']
 )
-
-after_install()
